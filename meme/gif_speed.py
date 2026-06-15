@@ -1,7 +1,7 @@
 """GIF 速度调控：0.3x ~ 5.0x 变速，支持 50 FPS 上限回退与均匀丢帧"""
 
 from PIL import Image
-from .gif_utils import unfold_frames, save_kwargs_for
+from .gif_utils import unfold_frames, save_rgba_gif
 
 _GIF_MIN_DURATION_MS = 20       # 业务上限：帧间隔不低于 20ms（→ 最高 50 FPS）
 _GIF_MAX_FPS = 1000 // _GIF_MIN_DURATION_MS  # 50
@@ -46,15 +46,13 @@ def adjust_gif_speed(
     # 调速后的目标 FPS
     target_fps = original_avg_fps * speed
 
-    # ── 情况 1：目标 FPS 在 100 以内，直接调速 ──
+    # ── 情况 1：目标 FPS 在 50 以内，直接调速 ──
     if target_fps <= _GIF_MAX_FPS:
         new_durs = [max(_GIF_MIN_DURATION_MS, min(65535, int(d / speed))) for d in durations]
-        kwargs = save_kwargs_for(gif, new_durs)
-        kwargs.update(save_all=True, append_images=frames[1:] if frame_count > 1 else [])
-        frames[0].save(output_path, "GIF", **kwargs)
+        save_rgba_gif(frames, new_durs, output_path, loop=gif.info.get("loop", 0))
         return output_path, speed, None
 
-    # ── 情况 2：不允许丢帧 → 回退到不超过 100 FPS 的最高倍率 ──
+    # ── 情况 2：不允许丢帧 → 回退到不超过 50 FPS 的最高倍率 ──
     if not allow_frame_drop:
         max_multiplier = _GIF_MAX_FPS / original_avg_fps
         max_multiplier = round(max_multiplier * 10) / 10  # 保留 1 位小数
@@ -65,9 +63,7 @@ def adjust_gif_speed(
 
         actual_fps = original_avg_fps * max_multiplier if max_multiplier >= 0.3 else original_avg_fps * 0.3
         new_durs = [max(_GIF_MIN_DURATION_MS, min(65535, int(d / max_multiplier))) for d in durations]
-        kwargs = save_kwargs_for(gif, new_durs)
-        kwargs.update(save_all=True, append_images=frames[1:] if frame_count > 1 else [])
-        frames[0].save(output_path, "GIF", **kwargs)
+        save_rgba_gif(frames, new_durs, output_path, loop=gif.info.get("loop", 0))
 
         warning = (
             f"⚠️ GIF 调速提醒：原 GIF {original_avg_fps:.1f} FPS，"
@@ -77,30 +73,34 @@ def adjust_gif_speed(
         )
         return output_path, max_multiplier, warning
 
-    # ── 情况 3：允许丢帧 → 均匀丢弃帧使单帧时长 ≥ 10ms ──
-    # 每 keep_every 帧保留 1 帧，丢弃其余
-    # 需满足: 保留帧数 × 10ms ≤ 原总时长 / speed
+    # ── 情况 3：允许丢帧 → 均匀丢弃帧以实现目标倍率 ──
+    # 逻辑：计算目标总时长下最多可保留多少帧（≥20ms/帧），
+    # 然后均匀丢弃。速度提升仅通过丢帧实现，不改变单帧间隔。
+    import math
     target_total_ms = total_dur_ms / speed
-    max_keepable = int(target_total_ms / _GIF_MIN_DURATION_MS)
+    max_keepable = math.ceil(target_total_ms / _GIF_MIN_DURATION_MS)
     if max_keepable < 1:
         max_keepable = 1
-    keep_every = max(1, (frame_count + max_keepable - 1) // max_keepable)  # ceil division
+    keep_every = math.ceil(frame_count / max_keepable)
 
     kept_frames = frames[::keep_every]
     kept_durations = durations[::keep_every]
 
-    new_durs = [max(_GIF_MIN_DURATION_MS, min(65535, int(d / speed))) for d in kept_durations]
-    kwargs = save_kwargs_for(gif, new_durs)
-    kwargs.update(save_all=True, append_images=kept_frames[1:] if len(kept_frames) > 1 else [])
-    kept_frames[0].save(output_path, "GIF", **kwargs)
+    # 丢帧模式下不修改单帧间隔，仅通过丢帧实现加速
+    new_durs = kept_durations
+    save_rgba_gif(kept_frames, new_durs, output_path, loop=gif.info.get("loop", 0))
 
-    # 计算实际达到的帧率
+    # 计算实际达到的倍率
     actual_total = sum(new_durs)
-    actual_fps = len(kept_frames) * 1000.0 / actual_total if actual_total > 0 else 100
+    if actual_total > 0:
+        actual_speed = round(total_dur_ms / actual_total, 1)
+    else:
+        actual_speed = speed
     warning = (
         f"ℹ️ GIF 调速：原 {frame_count} 帧 / {original_avg_fps:.1f} FPS，"
-        f"已通过均匀丢帧（保留 {len(kept_frames)} 帧，每 {keep_every} 取 1）"
-        f"加速至 ×{speed}，当前约 {actual_fps:.0f} FPS。"
+        f"×{speed} 需丢帧\n"
+        f"每 {keep_every} 帧保留 1 帧（→ {len(kept_frames)} 帧），"
+        f"实际倍率 ≈ ×{actual_speed}。"
     )
 
     return output_path, speed, warning

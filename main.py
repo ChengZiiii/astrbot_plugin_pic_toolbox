@@ -3,6 +3,8 @@
 import asyncio
 import os
 import re
+import time
+import uuid
 from PIL import Image
 
 import astrbot.api.message_components as Comp
@@ -320,7 +322,8 @@ class PicToolboxPlugin(Star):
     async def _download_and_process(self, event: AstrMessageEvent,
                                      image_url: str, processor, label: str,
                                      get_prefix=None):
-        input_path = os.path.join(TMP_DIR, f"pt_in_{os.getpid()}.tmp")
+        uid = uuid.uuid4().hex[:8]  # 每次请求唯一标识，避免并发冲突
+        input_path = os.path.join(TMP_DIR, f"pt_in_{os.getpid()}_{uid}.tmp")
         output_path = None
         loop = asyncio.get_event_loop()
         ok = await loop.run_in_executor(None, _download_sync, image_url, input_path)
@@ -333,10 +336,10 @@ class PicToolboxPlugin(Star):
             return
 
         ext = ".gif" if _is_gif(input_path) else ".png"
-        output_path = os.path.join(TMP_DIR, f"pt_out_{os.getpid()}{ext}")
+        output_path = os.path.join(TMP_DIR, f"pt_out_{os.getpid()}_{uid}{ext}")
 
         try:
-            processor(input_path, output_path)
+            await loop.run_in_executor(None, processor, input_path, output_path)
         except Exception as e:
             logger.error(f"[pic_toolbox] {label} 失败: {e}")
             try:
@@ -362,10 +365,13 @@ class PicToolboxPlugin(Star):
             ])
         else:
             yield event.chain_result([Comp.Image(file=str(output_path))])
+        # 延迟 10s 后清理输出文件（给 QQ 足够时间上传）
+        out = output_path
         async def _cleanup():
             await asyncio.sleep(10)
             try:
-                os.remove(output_path)
+                os.remove(out)
+                logger.debug(f"[pic_toolbox] 清理临时文件: {os.path.basename(out)}")
             except OSError:
                 pass
         asyncio.ensure_future(_cleanup())
@@ -374,9 +380,10 @@ class PicToolboxPlugin(Star):
         """双头像处理：指令者 + 被 @ 者。"""
         sender_qq = event.get_sender_id()
         loop = asyncio.get_event_loop()
-        c_path = os.path.join(TMP_DIR, f"pt_da_c_{os.getpid()}.png")
-        t_path = os.path.join(TMP_DIR, f"pt_da_t_{os.getpid()}.png")
-        o_path = os.path.join(TMP_DIR, f"pt_da_o_{os.getpid()}.gif")
+        uid = uuid.uuid4().hex[:8]
+        c_path = os.path.join(TMP_DIR, f"pt_da_c_{os.getpid()}_{uid}.png")
+        t_path = os.path.join(TMP_DIR, f"pt_da_t_{os.getpid()}_{uid}.png")
+        o_path = os.path.join(TMP_DIR, f"pt_da_o_{os.getpid()}_{uid}.gif")
 
         def _clean_inputs():
             for p in (c_path, t_path):
@@ -398,10 +405,12 @@ class PicToolboxPlugin(Star):
                 except OSError:
                     pass
             _clean_inputs()
+            out = o_path
             async def _cleanup():
                 await asyncio.sleep(10)
                 try:
-                    os.remove(o_path)
+                    os.remove(out)
+                    logger.debug(f"[pic_toolbox] 清理临时文件: {os.path.basename(out)}")
                 except OSError:
                     pass
             asyncio.ensure_future(_cleanup())
@@ -417,7 +426,7 @@ class PicToolboxPlugin(Star):
         cutoff = now - 3600
         try:
             for fname in os.listdir(TMP_DIR):
-                if fname.startswith(("pt_", "qr_login_")):
+                if fname.startswith("pt_") and not fname.endswith((".py", ".pyc")):
                     fpath = os.path.join(TMP_DIR, fname)
                     try:
                         if os.path.getmtime(fpath) < cutoff:

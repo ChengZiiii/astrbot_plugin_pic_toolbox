@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [v1.1.1] — 2026-06-16
+
+### 🐛 修复
+
+- **透明 GIF 背景变白**：修复 `unfold_frames()` 在 GIF 存在 `transparency` 索引但 `background` 索引不同时，`_get_background_rgba()` 错误返回不透明调色板颜色的问题。`disposal=2` 帧的背景从此正确使用透明色，后续帧不再丢失 alpha 通道。
+- **`save_rgba_gif()` 透明索引**：改用 `colors=255` 量化策略，让 Pillow 自动分配透明索引（替代之前的手动 `colors=254` + 强制 `trans_idx=255`），调色板映射更可靠。
+- **临时文件清理**：每次请求使用 `uuid` 生成唯一文件名，避免并发请求共享 PID 文件名导致的竞态条件。清理闭包显式捕获路径变量，确保 `asyncio.ensure_future` 延迟清理可靠执行。
+
+### 📦 依赖
+
+- `requirements.txt` 补充 `numpy>=1.24.0` 和 `opencv-python-headless>=4.8.0`（之前为隐式依赖）。
+
+### 🔧 影响范围
+
+透明 GIF 修复使以下指令受益：调速、反色、左右翻转、上下翻转、左/右/上/下对称。
+
+---
+
 ## [v1.1.0] — 2026-06-15
 
 ### ✨ 新增

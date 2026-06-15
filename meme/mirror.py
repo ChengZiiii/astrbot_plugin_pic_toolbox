@@ -1,7 +1,7 @@
 """镜像对称模块：左/右/上/下半边对称，支持静态图和 GIF"""
 
 from PIL import Image
-from .gif_utils import is_gif, unfold_frames, save_kwargs_for
+from .gif_utils import is_gif, unfold_frames, save_rgba_gif
 
 
 def _mirror_static(img: Image.Image, keep: str) -> Image.Image:
@@ -39,9 +39,7 @@ def _mirror_gif(input_path: str, output_path: str, keep: str) -> str:
     frames, durations = unfold_frames(gif)
     mirrored = [_mirror_static(f, keep) for f in frames]
 
-    kwargs = save_kwargs_for(gif, durations)
-    kwargs.update(save_all=True, append_images=mirrored[1:] if len(mirrored) > 1 else [])
-    mirrored[0].save(output_path, "GIF", **kwargs)
+    save_rgba_gif(mirrored, durations, output_path, loop=gif.info.get("loop", 0))
     return output_path
 
 

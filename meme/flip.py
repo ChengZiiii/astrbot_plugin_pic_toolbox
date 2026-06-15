@@ -1,7 +1,7 @@
 """翻转模块：静态图/GIF 左右翻转、上下翻转"""
 
 from PIL import Image
-from .gif_utils import is_gif, unfold_frames, save_kwargs_for
+from .gif_utils import is_gif, unfold_frames, save_rgba_gif
 
 
 def flip_horizontal(input_path: str, output_path: str) -> str:
@@ -27,10 +27,5 @@ def _flip_gif(input_path: str, output_path: str, method) -> str:
     frames, durations = unfold_frames(gif)
     flipped_frames = [frame.convert("RGBA").transpose(method) for frame in frames]
 
-    kwargs = save_kwargs_for(gif, durations)
-    kwargs.update(
-        save_all=True,
-        append_images=flipped_frames[1:] if len(flipped_frames) > 1 else [],
-    )
-    flipped_frames[0].save(output_path, "GIF", **kwargs)
+    save_rgba_gif(flipped_frames, durations, output_path, loop=gif.info.get("loop", 0))
     return output_path
