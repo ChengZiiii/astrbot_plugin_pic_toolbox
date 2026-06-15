@@ -64,13 +64,14 @@ def unfold_frames(gif: Image.Image):
 
 
 def save_kwargs_for(gif: Image.Image, durations: list) -> dict:
-    """构建 GIF 保存参数，保留原图 transparency / loop"""
-    kwargs = {
+    """构建 GIF 保存参数，保留原图 loop。
+
+    注意：不传递原 GIF 的 transparency 索引，因为帧经 RGBA 处理后
+    会生成新调色板，旧索引不匹配。PIL 会自动从 RGBA alpha 通道检测透明色。
+    """
+    return {
         "duration": durations,
         "loop": gif.info.get("loop", 0),
         "disposal": 2,
         "optimize": False,
     }
-    if "transparency" in gif.info:
-        kwargs["transparency"] = gif.info["transparency"]
-    return kwargs
