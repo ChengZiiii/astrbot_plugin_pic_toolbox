@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [v1.1.3] — 2026-06-22
+
+### ✨ 新增
+
+- **二次元人脸检测优化**：`发射` 指令引入 LBP 动漫人脸级联分类器（`lbpcascade_animeface.xml`，来自 nagadomi/lbpcascade_animeface），专为日系二次元脸型优化训练。配合直方图均衡化（`equalizeHist`）改善线稿对比度，大幅提升动漫头像的检测准确率。
+- **三级检测策略**：LBP 动漫级联（首选）→ Haar 正面级联（回退）→ Haar 侧脸级联（回退），每一层尝试多组参数（宽松 → 严格），自动择优取面积最大的检测框，确保动漫 + 真人头像均能正确检测。
+
+### 🔧 影响范围
+
+`meme/shoot.py` — `_detect_face_focal()` 完全重写，新增 `resource/lbpcascade_animeface.xml` 级联文件（~241KB）。其他指令不受影响。
+
+### 🙏 鸣谢
+
+- [nagadomi/lbpcascade_animeface](https://github.com/nagadomi/lbpcascade_animeface) — LBP 动漫人脸级联分类器
+
+---
+
 ## [v1.1.2] — 2026-06-16
 
 ### 🐛 修复

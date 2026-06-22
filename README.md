@@ -9,7 +9,7 @@
 基于 AstrBot 框架的群聊图片 / 头像处理插件，支持静态图和 GIF 的反色、翻转、镜像对称、调速，以及摸头杀、发射、撅人、鞭笞、砍头等一系列趣味表情包生成。所有 GIF 处理统一使用增量帧展开管道，保留原图时长、透明度与循环信息。
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v1.1.2-blue" alt="Version">
+  <img src="https://img.shields.io/badge/version-v1.1.3-blue" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.8%2B-blue" alt="Python">
   <img src="https://img.shields.io/badge/AstrBot-%E6%8F%92%E4%BB%B6%E6%A1%86%E6%9E%B6-brightgreen" alt="AstrBot">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
