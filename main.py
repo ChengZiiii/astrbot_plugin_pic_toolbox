@@ -90,6 +90,9 @@ class PicToolboxPlugin(Star):
                 image_url = self._extract_image_url(event)
 
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
 
             event.stop_event()
@@ -108,6 +111,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, flip.flip_horizontal, "左右翻转"):
@@ -125,6 +131,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, flip.flip_vertical, "上下翻转"):
@@ -142,6 +151,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, rotate.rotate_clockwise, "顺时针"):
@@ -159,6 +171,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, rotate.rotate_counterclockwise, "逆时针"):
@@ -175,6 +190,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, mirror.mirror_left, "左对称"):
@@ -191,6 +209,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, mirror.mirror_right, "右对称"):
@@ -207,6 +228,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, mirror.mirror_top, "上对称"):
@@ -223,6 +247,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, mirror.mirror_bottom, "下对称"):
@@ -240,6 +267,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, petpet.generate_petpet, "摸头"):
@@ -256,6 +286,9 @@ class PicToolboxPlugin(Star):
             if not image_url:
                 image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, shoot.generate_shoot, "发射"):
@@ -305,6 +338,9 @@ class PicToolboxPlugin(Star):
                 return
             image_url = self._extract_image_url(event)
             if not image_url:
+                if self._has_video_reply(event):
+                    event.stop_event()
+                    yield event.plain_result("视频回复暂不支持，截个图发给我吧～")
                 return
             try:
                 speed = gif_speed.parse_speed(speed_match.group(1))
@@ -346,12 +382,31 @@ class PicToolboxPlugin(Star):
                         url = getattr(rc, "url", None) or getattr(rc, "file", None)
                         if url:
                             return url
+                # 回复视频：取视频封面（cover）作为图片源
+                # Note: 部分 OneBot 实现（如 Lagrange）的 cover 可能为空，
+                # 此时返回 None，由 _has_video_reply 处理优雅失败。
+                for rc in chain:
+                    if isinstance(rc, Comp.Video):
+                        cover = getattr(rc, "cover", None) or ""
+                        if cover:
+                            return cover
         for comp in event.get_messages():
             if isinstance(comp, Comp.Image):
                 url = getattr(comp, "url", None) or getattr(comp, "file", None)
                 if url:
                     return url
         return None
+
+    @staticmethod
+    def _has_video_reply(event: AstrMessageEvent) -> bool:
+        """检测回复链中是否包含视频（用于优雅失败提示）。"""
+        for comp in event.get_messages():
+            if isinstance(comp, Comp.Reply):
+                chain = getattr(comp, "chain", None) or []
+                for rc in chain:
+                    if isinstance(rc, Comp.Video):
+                        return True
+        return False
 
     async def _download_and_process(self, event: AstrMessageEvent,
                                      image_url: str, processor, label: str,
