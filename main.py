@@ -15,7 +15,7 @@ from astrbot.api.star import Context, Star
 from pathlib import Path
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
-from .meme import gif_speed, invert, flip, petpet, mirror, shoot, do, lash, behead
+from .meme import gif_speed, invert, flip, petpet, mirror, shoot, do, lash, behead, rotate
 
 QQ_AVATAR_URL = "http://q1.qlogo.cn/g?b=qq&nk={qq}&s=640"
 TMP_DIR = Path(get_astrbot_data_path()) / "plugin_data" / "pic_toolbox"
@@ -128,6 +128,40 @@ class PicToolboxPlugin(Star):
                 return
             event.stop_event()
             async for r in self._download_and_process(event, image_url, flip.flip_vertical, "上下翻转"):
+                yield r
+            return
+
+        # ── 顺时针 ─────────────────────────
+        if cmd_text == "顺时针":
+            if not self._match_mode and not actual_cmd.startswith("/"):
+                return
+
+            image_url = None
+            if at_qq and self._enable_at_avatar:
+                image_url = QQ_AVATAR_URL.format(qq=at_qq)
+            if not image_url:
+                image_url = self._extract_image_url(event)
+            if not image_url:
+                return
+            event.stop_event()
+            async for r in self._download_and_process(event, image_url, rotate.rotate_clockwise, "顺时针"):
+                yield r
+            return
+
+        # ── 逆时针 ─────────────────────────
+        if cmd_text == "逆时针":
+            if not self._match_mode and not actual_cmd.startswith("/"):
+                return
+
+            image_url = None
+            if at_qq and self._enable_at_avatar:
+                image_url = QQ_AVATAR_URL.format(qq=at_qq)
+            if not image_url:
+                image_url = self._extract_image_url(event)
+            if not image_url:
+                return
+            event.stop_event()
+            async for r in self._download_and_process(event, image_url, rotate.rotate_counterclockwise, "逆时针"):
                 yield r
             return
 

@@ -6,10 +6,10 @@
 
 # 🖼️ 图片处理工具箱 (astrbot_plugin_pic_toolbox)
 
-基于 AstrBot 框架的群聊图片 / 头像处理插件，支持静态图和 GIF 的反色、翻转、镜像对称、调速，以及摸头杀、发射、撅人、鞭笞、砍头等一系列趣味表情包生成。所有 GIF 处理统一使用增量帧展开管道，保留原图时长、透明度与循环信息。
+基于 AstrBot 框架的群聊图片 / 头像处理插件，支持静态图和 GIF 的反色、翻转、旋转、镜像对称、调速，以及摸头杀、发射、撅人、鞭笞、砍头等一系列趣味表情包生成。所有 GIF 处理统一使用增量帧展开管道，保留原图时长、透明度与循环信息。
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-v1.1.3-blue" alt="Version">
+  <img src="https://img.shields.io/badge/version-v1.2.0-blue" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.8%2B-blue" alt="Python">
   <img src="https://img.shields.io/badge/AstrBot-%E6%8F%92%E4%BB%B6%E6%A1%86%E6%9E%B6-brightgreen" alt="AstrBot">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
@@ -24,6 +24,8 @@
 | 指令 | 说明 | 图片来源 |
 | :--- | :--- | :--- |
 | `反色` | 对图片 / GIF 执行反色处理 | 引用回复图片 / 直接发送图片 / `@用户`取头像 |
+| `顺时针` | 顺时针旋转 90° | 同上 |
+| `逆时针` | 逆时针旋转 90° | 同上 |
 | `左右翻转` | 水平镜像翻转 | 同上 |
 | `上下翻转` | 垂直颠倒翻转 | 同上 |
 | `调速 0.3~5.0` | 调整 GIF 播放速度（如 `调速 2.0` 即两倍速）。GIF 上限 50 FPS，超限时自动回退到最接近上限的倍率并提示用户；开启 `gif_speed_allow_frame_drop` 后则通过均匀丢帧实现目标倍率 | 引用回复图片 / 直接发送图片 |
@@ -139,6 +141,17 @@ Bot：  [返回反色后的图片]
 Bot：  [返回 2 倍速的 GIF]
 ```
 
+### 旋转
+
+```
+用户：（发送一张图片）
+用户：/顺时针
+Bot：  [返回顺时针旋转 90° 后的图片]
+
+用户：/逆时针
+Bot：  [返回逆时针旋转 90° 后的图片]
+```
+
 ### @用户取头像
 
 ```
@@ -172,6 +185,7 @@ astrbot_plugin_pic_toolbox/
 │   ├── gif_utils.py     # GIF 帧展开与保存公用函数
 │   ├── invert.py        # 反色处理
 │   ├── flip.py          # 水平 / 垂直翻转
+│   ├── rotate.py        # 顺时针 / 逆时针 90° 旋转
 │   ├── mirror.py        # 左 / 右 / 上 / 下对称
 │   ├── gif_speed.py     # GIF 调速
 │   ├── petpet.py        # 摸头杀生成器
